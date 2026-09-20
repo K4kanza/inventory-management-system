@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% load form_tags %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<h1 class="h3 mb-3">{{ title }}</h1>
+<div class="card shadow-sm" style="max-width: 32rem;">
+  <div class="card-body">
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {% for field in form %}
+        <div class="mb-3">
+          <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field|addclass:"form-control" }}
+          {% if field.errors %}<div class="text-danger small">{{ field.errors|striptags }}</div>{% endif %}
+        </div>
+      {% endfor %}
+      <button class="btn btn-primary" type="submit">Create</button>
+      <a class="btn btn-outline-secondary" href="{% url 'accounts:user_list' %}">Cancel</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

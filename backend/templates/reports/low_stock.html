@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Low stock report{% endblock %}
+{% block content %}
+<h1 class="h3 mb-3">Low / out-of-stock items</h1>
+<div class="row g-3">
+  <div class="col-md-6">
+    <div class="card shadow-sm">
+      <div class="card-header">Out of stock</div>
+      <div class="card-body">{% include "includes/alert_list.html" with rows=summary.out_of_stock %}</div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card shadow-sm">
+      <div class="card-header">Low stock</div>
+      <div class="card-body">{% include "includes/alert_list.html" with rows=summary.low_stock %}</div>
+    </div>
+  </div>
+</div>
+{% endblock %}

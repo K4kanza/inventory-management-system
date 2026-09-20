@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Movement #{{ movement.pk }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h3">Movement #{{ movement.pk }}</h1>
+  <span class="badge {% if movement.status == 'applied' %}bg-success{% elif movement.status == 'pending' %}bg-warning text-dark{% else %}bg-secondary{% endif %} fs-6">
+    {{ movement.get_status_display }}
+  </span>
+</div>
+<dl class="row bg-white p-3 rounded shadow-sm" style="max-width: 42rem;">
+  <dt class="col-sm-4">Flow</dt><dd class="col-sm-8">{{ movement.get_flow_display }}</dd>
+  <dt class="col-sm-4">Item</dt><dd class="col-sm-8">{{ movement.product.sku }} — {{ movement.product.name }}</dd>
+  <dt class="col-sm-4">Location</dt><dd class="col-sm-8">{{ movement.location.code }}</dd>
+  <dt class="col-sm-4">Quantity</dt><dd class="col-sm-8">{{ movement.signed_quantity }}</dd>
+  <dt class="col-sm-4">Reason</dt><dd class="col-sm-8">{{ movement.reason }}</dd>
+  <dt class="col-sm-4">Recorded by</dt><dd class="col-sm-8">{{ movement.recorded_by.username }} at {{ movement.recorded_at }}</dd>
+  {% if movement.reconciliation_ref %}<dt class="col-sm-4">Reconciliation</dt><dd class="col-sm-8">{{ movement.reconciliation_ref }}</dd>{% endif %}
+  {% if movement.override_by %}<dt class="col-sm-4">Override</dt><dd class="col-sm-8">{{ movement.override_by.username }} at {{ movement.override_at }}</dd>{% endif %}
+</dl>
+{% if can_approve %}
+  <form class="d-inline" method="post" action="{% url 'movements:movement_detail' pk=movement.pk %}">
+    {% csrf_token %}
+    <input type="hidden" name="approved" value="true">
+    <button class="btn btn-success" type="submit">Approve consent</button>
+  </form>
+  <form class="d-inline" method="post" action="{% url 'movements:movement_detail' pk=movement.pk %}">
+    {% csrf_token %}
+    <input type="hidden" name="approved" value="false">
+    <button class="btn btn-outline-danger" type="submit">Deny consent</button>
+  </form>
+{% endif %}
+<a class="btn btn-outline-secondary" href="{% url 'movements:movement_list' %}">Back</a>
+{% endblock %}

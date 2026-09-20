@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Movement report{% endblock %}
+{% block content %}
+<h1 class="h3 mb-3">Movement report (append-only)</h1>
+<table class="table table-striped bg-white shadow-sm">
+  <thead>
+    <tr><th>#</th><th>Flow</th><th>Item</th><th>Location</th><th>Qty</th><th>Reason</th><th>Recorder</th><th>When</th></tr>
+  </thead>
+  <tbody>
+    {% for movement in movements %}
+      <tr>
+        <td>{{ movement.pk }}</td>
+        <td>{{ movement.get_flow_display }}</td>
+        <td>{{ movement.product.sku }}</td>
+        <td>{{ movement.location.code }}</td>
+        <td>{{ movement.signed_quantity }}</td>
+        <td>{{ movement.reason }}</td>
+        <td>{{ movement.recorded_by.username }}</td>
+        <td>{{ movement.recorded_at }}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="8" class="text-center text-muted">No movements.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

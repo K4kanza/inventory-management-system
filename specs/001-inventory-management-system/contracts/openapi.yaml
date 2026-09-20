@@ -1,0 +1,627 @@
+openapi: 3.0.3
+info:
+  title: Inventory Management System API
+  version: 1.0.0
+  description: JSON API powering the dashboard, search, movements, and reports.
+    Backed by the Django monolith; session-authenticated with CSRF for same-origin
+    calls. Full generated spec is produced at build time by drf-spectacular —
+    this file is the signed contract for Phase 1+.
+servers:
+  - url: /api/v1
+security:
+  - sessionAuth: []
+tags:
+  - name: auth
+  - name: catalog
+  - name: stock
+  - name: movements
+  - name: reports
+  - name: admin
+paths:
+  /auth/login:
+    post:
+      tags: [auth]
+      summary: Start a session (username + password).
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoginRequest' }
+      responses:
+        '200':
+          description: Logged in.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UserPublic' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /auth/logout:
+    post:
+      tags: [auth]
+      summary: End the session.
+      responses:
+        '204': { description: Logged out. }
+  /auth/me:
+    get:
+      tags: [auth]
+      summary: Current user and role.
+      responses:
+        '200':
+          description: Current user.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UserPublic' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /categories:
+    get:
+      tags: [catalog]
+      summary: List categories.
+      parameters:
+        - { $ref: '#/components/parameters/ActiveParam' }
+      responses:
+        '200':
+          description: Categories.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Category' }
+    post:
+      tags: [catalog]
+      summary: Create category. Role: staff+.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CategoryWrite' }
+      responses:
+        '201': { $ref: '#/components/responses/CreatedCategory' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /categories/{id}:
+    parameters:
+      - { $ref: '#/components/parameters/IdParam' }
+    patch:
+      tags: [catalog]
+      summary: Update category. Role: staff+.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CategoryWrite' }
+      responses:
+        '200': { $ref: '#/components/responses/CreatedCategory' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /locations:
+    get:
+      tags: [catalog]
+      summary: List locations (incl. inactive marker).
+      parameters:
+        - { $ref: '#/components/parameters/ActiveParam' }
+      responses:
+        '200':
+          description: Locations.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Location' }
+    post:
+      tags: [catalog]
+      summary: Create location. Role: staff+.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LocationWrite' }
+      responses:
+        '201':
+          description: Created location.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Location' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /items:
+    get:
+      tags: [catalog]
+      summary: Search/filter catalogue. Role: staff+.
+      parameters:
+        - { $ref: '#/components/parameters/SearchParam' }
+        - { $ref: '#/components/parameters/CategoryParam' }
+        - { $ref: '#/components/parameters/LocationParam' }
+        - { $ref: '#/components/parameters/IncludeDisabledParam' }
+        - { $ref: '#/components/parameters/PageParam' }
+      responses:
+        '200':
+          description: Paginated item list (role: staff+).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ItemPage' }
+    post:
+      tags: [catalog]
+      summary: Create item; SKU must be unique. Role: staff+.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ItemWrite' }
+      responses:
+        '201':
+          description: Created item.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Item' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /items/{sku}:
+    parameters:
+      - { $ref: '#/components/parameters/SkuParam' }
+    get:
+      tags: [catalog]
+      summary: Item detail. Role: staff+.
+      responses:
+        '200':
+          description: Item.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Item' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      tags: [catalog]
+      summary: Edit name/category/unit/reorder level. SKU immutable. Role: staff+.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ItemWrite' }
+      responses:
+        '200':
+          description: Updated item.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Item' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /items/{sku}/disable:
+    post:
+      tags: [catalog]
+      summary: Soft-disable item (history preserved). Role: manager+.
+      parameters:
+        - { $ref: '#/components/parameters/SkuParam' }
+      responses:
+        '200': { $ref: '#/components/responses/CreatedCategory' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /stock-levels:
+    get:
+      tags: [stock]
+      summary: Current quantities + derived status per (item, location). Role: staff+.
+      parameters:
+        - { $ref: '#/components/parameters/ItemParam' }
+        - { $ref: '#/components/parameters/LocationParam' }
+      responses:
+        '200':
+          description: Stock levels.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/StockLevel' }
+
+  /movements:
+    post:
+      tags: [movements]
+      summary: Record reception/issue/adjustment. Atomic per (item, location). Role: staff+.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/MovementWrite' }
+      responses:
+        '201':
+          description: Movement recorded; StockLevel updated in same transaction.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Movement' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+    get:
+      tags: [movements]
+      summary: Movement history (append-only). Role: staff+.
+      parameters:
+        - { $ref: '#/components/parameters/ItemParam' }
+        - { $ref: '#/components/parameters/LocationParam' }
+        - { $ref: '#/components/parameters/FlowParam' }
+        - { $ref: '#/components/parameters/FromParam' }
+        - { $ref: '#/components/parameters/ToParam' }
+        - { $ref: '#/components/parameters/RecordedByParam' }
+        - { $ref: '#/components/parameters/PageParam' }
+      responses:
+        '200':
+          description: Paginated movements.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MovementPage' }
+  /movements/{id}/consent:
+    parameters:
+      - { $ref: '#/components/parameters/IdParam' }
+    post:
+      tags: [movements]
+      summary: Manager consent for an over-issue / sensitive adjustment. Role: manager+.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ConsentWrite' }
+      responses:
+        '200':
+          description: Consented; movement committed with audit fields.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Movement' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /dashboard/alerts:
+    get:
+      tags: [stock]
+      summary: Low/out-of-stock per location (next-refresh semantics). Role: staff+.
+      parameters:
+        - { $ref: '#/components/parameters/LocationParam' }
+      responses:
+        '200':
+          description: Alert lists.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AlertSummary' }
+
+  /reports/valuation:
+    get:
+      tags: [reports]
+      summary: Quantity x unit-cost per item and location. Role: manager+.
+      parameters:
+        - { $ref: '#/components/parameters/LocationParam' }
+        - { $ref: '#/components/parameters/CategoryParam' }
+      responses:
+        '200':
+          description: Valuation rows + total.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ValuationReport' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /reports/movements:
+    get:
+      tags: [reports]
+      summary: Filtered movement report with recorder + timestamps. Role: manager+.
+      parameters:
+        - { $ref: '#/components/parameters/ItemParam' }
+        - { $ref: '#/components/parameters/LocationParam' }
+        - { $ref: '#/components/parameters/FlowParam' }
+        - { $ref: '#/components/parameters/FromParam' }
+        - { $ref: '#/components/parameters/ToParam' }
+        - { $ref: '#/components/parameters/PageParam' }
+      responses:
+        '200':
+          description: Paginated report rows.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MovementPage' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /reports/low-stock:
+    get:
+      tags: [reports]
+      summary: Low/out-of-stock lists (manager view). Role: manager+.
+      parameters:
+        - { $ref: '#/components/parameters/LocationParam' }
+      responses:
+        '200':
+          description: Low-stock report.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AlertSummary' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /users:
+    get:
+      tags: [admin]
+      summary: List users. Role: admin.
+      responses:
+        '200':
+          description: Users.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/UserAdmin' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [admin]
+      summary: Create user. Role: admin.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UserWrite' }
+      responses:
+        '201':
+          description: Created user.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UserAdmin' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /users/{id}/role:
+    parameters:
+      - { $ref: '#/components/parameters/IdParam' }
+    patch:
+      tags: [admin]
+      summary: Change a user's role. Role: admin.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RoleWrite' }
+      responses:
+        '200':
+          description: Updated user.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UserAdmin' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+components:
+  securitySchemes:
+    sessionAuth:
+      type: apiKey
+      in: cookie
+      name: sessionid
+      description: Django session cookie (same-origin; CSRF token required on mutating calls).
+  parameters:
+    IdParam: { name: id, in: path, required: true, schema: { type: integer } }
+    SkuParam: { name: sku, in: path, required: true, schema: { type: string } }
+    SearchParam: { name: search, in: query, schema: { type: string }, description: Free-text over sku/name/category. }
+    CategoryParam: { name: category, in: query, schema: { type: integer }, description: Category id. }
+    LocationParam: { name: location, in: query, schema: { type: integer }, description: Location id. }
+    ItemParam: { name: item, in: query, schema: { type: string }, description: SKU. }
+    IncludeDisabledParam: { name: include_disabled, in: query, schema: { type: boolean, default: false } }
+    ActiveParam: { name: active, in: query, schema: { type: boolean } }
+    FlowParam: { name: flow, in: query, schema: { type: string, enum: [receipt, issue, adjustment] } }
+    FromParam: { name: from, in: query, schema: { type: string, format: date } }
+    ToParam: { name: to, in: query, schema: { type: string, format: date } }
+    RecordedByParam: { name: recorded_by, in: query, schema: { type: integer }, description: User id. }
+    PageParam: { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+  responses:
+    ValidationError:
+      description: Field validation failed.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Unauthorized:
+      description: Session missing/expired.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Forbidden:
+      description: Role lacks permission (FR-011).
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    NotFound:
+      description: Resource not found.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Conflict:
+      description: Duplicate SKU or insufficient stock without consent (FR-006).
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    CreatedCategory:
+      description: OK.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Category' }
+  schemas:
+    Error:
+      type: object
+      required: [detail]
+      properties:
+        detail: { type: string }
+        fields:
+          type: object
+          additionalProperties: { type: array, items: { type: string } }
+    LoginRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username: { type: string }
+        password: { type: string, format: password }
+    Role:
+      type: string
+      enum: [admin, manager, staff]
+    UserPublic:
+      type: object
+      required: [id, username, role]
+      properties:
+        id: { type: integer }
+        username: { type: string }
+        role: { $ref: '#/components/schemas/Role' }
+    UserWrite:
+      type: object
+      required: [username, password, role]
+      properties:
+        username: { type: string, minLength: 3 }
+        password: { type: string, format: password, minLength: 8 }
+        role: { $ref: '#/components/schemas/Role' }
+    UserAdmin:
+      allOf:
+        - { $ref: '#/components/schemas/UserPublic' }
+        - type: object
+          properties:
+            active: { type: boolean }
+            date_joined: { type: string, format: date-time }
+    RoleWrite:
+      type: object
+      required: [role]
+      properties:
+        role: { $ref: '#/components/schemas/Role' }
+    Category:
+      type: object
+      required: [id, name]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        description: { type: string, nullable: true }
+        is_active: { type: boolean }
+    CategoryWrite:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 100 }
+        description: { type: string }
+    Location:
+      type: object
+      required: [id, name, code]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        code: { type: string }
+        is_active: { type: boolean }
+    LocationWrite:
+      type: object
+      required: [name, code]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 100 }
+        code: { type: string, minLength: 1, maxLength: 20 }
+    Unit:
+      type: object
+      required: [id, name, symbol, allow_fractional]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        symbol: { type: string }
+        allow_fractional: { type: boolean }
+    Item:
+      type: object
+      required: [sku, name, category, unit, reorder_level]
+      properties:
+        sku: { type: string, maxLength: 50 }
+        name: { type: string, maxLength: 200 }
+        category: { $ref: '#/components/schemas/Category' }
+        unit: { $ref: '#/components/schemas/Unit' }
+        reorder_level: { type: number, minimum: 0 }
+        unit_cost: { type: number, minimum: 0 }
+        is_active: { type: boolean }
+    ItemWrite:
+      type: object
+      required: [sku, name, category, unit, reorder_level]
+      properties:
+        sku: { type: string, maxLength: 50 }
+        name: { type: string, minLength: 1, maxLength: 200 }
+        category: { type: integer }
+        unit: { type: integer }
+        reorder_level: { type: number, minimum: 0 }
+        unit_cost: { type: number, minimum: 0 }
+    ItemPage:
+      type: object
+      required: [count, next, previous, results]
+      properties:
+        count: { type: integer }
+        next: { type: string, nullable: true }
+        previous: { type: string, nullable: true }
+        results: { type: array, items: { $ref: '#/components/schemas/Item' } }
+    StockLevel:
+      type: object
+      required: [product, location, quantity, status]
+      properties:
+        product: { $ref: '#/components/schemas/Item' }
+        location: { $ref: '#/components/schemas/Location' }
+        quantity: { type: number, minimum: 0 }
+        status:
+          type: string
+          enum: [ok, low_stock, out_of_stock]
+    MovementWrite:
+      type: object
+      required: [flow, product, location, quantity, reason]
+      properties:
+        flow:
+          type: string
+          enum: [receipt, issue, adjustment]
+        product: { type: string, description: SKU. }
+        location: { type: integer }
+        quantity: { type: number, exclusiveMinimum: 0, description: Positive magnitude; fractional only if the unit allows it. }
+        reason: { type: string, minLength: 1, maxLength: 500 }
+        override: { type: boolean, default: false, description: Request manager consent for over-issue. }
+        reconciliation_ref: { type: string, description: Documented source for adjustment movements. }
+    Movement:
+      type: object
+      required: [id, flow, product, location, quantity, reason, recorded_by, recorded_at]
+      properties:
+        id: { type: integer }
+        flow: { type: string, enum: [receipt, issue, adjustment] }
+        product: { type: string, description: SKU. }
+        location: { $ref: '#/components/schemas/Location' }
+        quantity: { type: number }
+        reason: { type: string }
+        recorded_by: { type: integer }
+        recorded_at: { type: string, format: date-time }
+        requires_override: { type: boolean }
+        override_by: { type: integer, nullable: true }
+        override_at: { type: string, format: date-time, nullable: true }
+        reconciliation_ref: { type: string, nullable: true }
+    ConsentWrite:
+      type: object
+      required: [approved]
+      properties:
+        approved: { type: boolean, description: Manager consent grant/deny for the pending movement. }
+    MovementPage:
+      type: object
+      required: [count, next, previous, results]
+      properties:
+        count: { type: integer }
+        next: { type: string, nullable: true }
+        previous: { type: string, nullable: true }
+        results: { type: array, items: { $ref: '#/components/schemas/Movement' } }
+    AlertItem:
+      type: object
+      required: [sku, name, location, quantity, reorder_level, status]
+      properties:
+        sku: { type: string }
+        name: { type: string }
+        location: { $ref: '#/components/schemas/Location' }
+        quantity: { type: number }
+        reorder_level: { type: number }
+        status: { type: string, enum: [low_stock, out_of_stock] }
+    AlertSummary:
+      type: object
+      required: [low_stock, out_of_stock]
+      properties:
+        low_stock: { type: array, items: { $ref: '#/components/schemas/AlertItem' } }
+        out_of_stock: { type: array, items: { $ref: '#/components/schemas/AlertItem' } }
+    ValuationRow:
+      type: object
+      required: [sku, name, location, quantity, unit_cost, value]
+      properties:
+        sku: { type: string }
+        name: { type: string }
+        location: { $ref: '#/components/schemas/Location' }
+        quantity: { type: number }
+        unit_cost: { type: number }
+        value: { type: number }
+    ValuationReport:
+      type: object
+      required: [rows, total]
+      properties:
+        rows: { type: array, items: { $ref: '#/components/schemas/ValuationRow' } }
+        total: { type: number }

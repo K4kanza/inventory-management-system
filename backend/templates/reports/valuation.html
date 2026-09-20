@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Valuation report{% endblock %}
+{% block content %}
+<h1 class="h3 mb-3">Valuation report</h1>
+<table class="table table-striped bg-white shadow-sm">
+  <thead>
+    <tr><th>SKU</th><th>Name</th><th>Location</th><th>Quantity</th><th>Unit cost</th><th>Value</th></tr>
+  </thead>
+  <tbody>
+    {% for row in report.rows %}
+      <tr>
+        <td>{{ row.sku }}</td><td>{{ row.name }}</td><td>{{ row.location.code }}</td>
+        <td>{{ row.quantity }}</td><td>{{ row.unit_cost }}</td><td>{{ row.value }}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="6" class="text-center text-muted">No stock.</td></tr>
+    {% endfor %}
+  </tbody>
+  <tfoot><tr><th colspan="5" class="text-end">Total</th><th>{{ report.total }}</th></tr></tfoot>
+</table>
+{% endblock %}

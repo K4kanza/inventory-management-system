@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<h1 class="h3 mb-4">Dashboard — stock alerts</h1>
+<div class="row g-3">
+  <div class="col-md-6">
+    <div class="card shadow-sm h-100">
+      <div class="card-header bg-warning text-dark">Out of stock</div>
+      <div class="card-body">
+        {% include "includes/alert_list.html" with rows=summary.out_of_stock %}
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card shadow-sm h-100">
+      <div class="card-header bg-warning-subtle">Low stock</div>
+      <div class="card-body">
+        {% include "includes/alert_list.html" with rows=summary.low_stock %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% load form_tags %}
+{% block title %}{{ kind }}s{% endblock %}
+{% block content %}
+<h1 class="h3 mb-3">{{ kind }}s</h1>
+<table class="table table-striped bg-white shadow-sm">
+  <thead>
+    <tr>
+      {% if categories %}<th>Name</th><th>Description</th><th>Active</th>
+      {% elif locations %}<th>Code</th><th>Name</th><th>Active</th>{% endif %}
+    </tr>
+  </thead>
+  <tbody>
+    {% for row in categories %}
+      <tr><td>{{ row.name }}</td><td>{{ row.description }}</td><td>{{ row.is_active }}</td></tr>
+    {% empty %}{% for row in locations %}
+      <tr><td>{{ row.code }}</td><td>{{ row.name }}</td><td>{{ row.is_active }}</td></tr>
+    {% empty %}
+      <tr><td colspan="3" class="text-center text-muted">None yet.</td></tr>
+    {% endfor %}{% endfor %}
+  </tbody>
+</table>
+<div class="card shadow-sm" style="max-width: 32rem;">
+  <div class="card-body">
+    <h2 class="h5">New {{ kind|lower }}</h2>
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {% for field in form %}
+        <div class="mb-3">
+          <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field|addclass:"form-control" }}
+          {% if field.errors %}<div class="text-danger small">{{ field.errors|striptags }}</div>{% endif %}
+        </div>
+      {% endfor %}
+      <button class="btn btn-primary" type="submit">Save</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,12 @@
+{% if rows %}
+  {% for row in rows %}
+    <div class="d-flex justify-content-between border-bottom py-1">
+      <span><strong>{{ row.sku }}</strong> — {{ row.name }} @ {{ row.location.code }}</span>
+      <span class="badge {% if row.status == 'out_of_stock' %}bg-danger{% else %}bg-warning text-dark{% endif %}">
+        {{ row.quantity }} (reorder {{ row.reorder_level }})
+      </span>
+    </div>
+  {% endfor %}
+{% else %}
+  <p class="text-success mb-0">None.</p>
+{% endif %}

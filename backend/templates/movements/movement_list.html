@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Movements{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h3">Movements</h1>
+  <a class="btn btn-success" href="{% url 'movements:movement_new' %}">Record movement</a>
+</div>
+<form class="row g-2 mb-3" method="get">
+  <div class="col-auto">
+    <input class="form-control" type="search" name="item" value="{{ item|default:'' }}" placeholder="Item SKU">
+  </div>
+  <div class="col-auto">
+    <select class="form-select" name="flow">
+      <option value="">All flows</option>
+      <option value="receipt" {% if flow == 'receipt' %}selected{% endif %}>Receipt</option>
+      <option value="issue" {% if flow == 'issue' %}selected{% endif %}>Issue</option>
+      <option value="adjustment" {% if flow == 'adjustment' %}selected{% endif %}>Adjustment</option>
+    </select>
+  </div>
+  <div class="col-auto"><button class="btn btn-outline-primary" type="submit">Filter</button></div>
+</form>
+<table class="table table-striped align-middle bg-white shadow-sm">
+  <thead>
+    <tr><th>#</th><th>Flow</th><th>Item</th><th>Location</th><th>Qty</th><th>Recorded</th><th>Recorder</th><th>Status</th></tr>
+  </thead>
+  <tbody>
+    {% for movement in movements %}
+      <tr>
+        <td><a href="{% url 'movements:movement_detail' pk=movement.pk %}">{{ movement.pk }}</a></td>
+        <td>{{ movement.get_flow_display }}</td>
+        <td>{{ movement.product.sku }}</td>
+        <td>{{ movement.location.code }}</td>
+        <td>{% if movement.direction == 'out' %}-{% else %}+{% endif %}{{ movement.quantity }}</td>
+        <td>{{ movement.recorded_at }}</td>
+        <td>{{ movement.recorded_by.username }}</td>
+        <td>
+          {% if movement.status == 'applied' %}<span class="badge bg-success">applied</span>
+          {% elif movement.status == 'pending' %}<span class="badge bg-warning text-dark">awaiting consent</span>
+          {% else %}<span class="badge bg-secondary">cancelled</span>{% endif %}
+        </td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="8" class="text-center text-muted">No movements yet.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% include "includes/pagination.html" with page_obj=movements %}
+{% endblock %}

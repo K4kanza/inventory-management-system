@@ -1,0 +1,40 @@
+[project]
+name = "inventory-backend"
+version = "0.1.0"
+description = "Inventory Management System backend (Django 5.2 LTS + PostgreSQL)"
+requires-python = ">=3.12"
+dependencies = [
+    "Django>=5.2,<5.3",
+    "djangorestframework>=3.17,<3.18",
+    "drf-spectacular>=0.28,<0.29",
+    "psycopg[binary]>=3.2,<4",
+    "dj-database-url>=2.2",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8,<10",
+    "pytest-django>=4.9,<5",
+    "ruff>=0.9,<1",
+]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.development"
+python_files = ["test_*.py"]
+pythonpath = ["."]
+addopts = "-m 'not slow' -q"
+markers = [
+    "slow: long-running performance tests (deselect by default)",
+    "postgres: requires a reachable PostgreSQL instance",
+]
+
+[tool.ruff]
+line-length = 110
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B"]
+ignore = ["E501"]
+
+[tool.ruff.format]
+quote-style = "double"

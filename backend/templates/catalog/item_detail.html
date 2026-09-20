@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}{{ item.sku }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h3">{{ item.sku }} — {{ item.name }}</h1>
+  <div>
+    <a class="btn btn-outline-primary" href="{% url 'catalog:item_edit' sku=item.sku %}">Edit</a>
+    {% if item.is_active %}
+      <form class="d-inline" method="post" action="{% url 'catalog:item_disable' sku=item.sku %}">
+        {% csrf_token %}
+        <button class="btn btn-outline-danger" type="submit">Disable</button>
+      </form>
+    {% endif %}
+  </div>
+</div>
+<div class="row">
+  <div class="col-md-5">
+    <dl class="row bg-white p-3 rounded shadow-sm">
+      <dt class="col-sm-4">Category</dt><dd class="col-sm-8">{{ item.category.name }}</dd>
+      <dt class="col-sm-4">Unit</dt><dd class="col-sm-8">{{ item.unit.symbol }}</dd>
+      <dt class="col-sm-4">Reorder level</dt><dd class="col-sm-8">{{ item.reorder_level }}</dd>
+      <dt class="col-sm-4">Unit cost</dt><dd class="col-sm-8">{{ item.unit_cost }}</dd>
+      <dt class="col-sm-4">Status</dt>
+      <dd class="col-sm-8">{% if item.is_active %}<span class="badge bg-success">active</span>{% else %}<span class="badge bg-secondary">disabled</span>{% endif %}</dd>
+    </dl>
+  </div>
+  <div class="col-md-7">
+    <h2 class="h5">Stock levels</h2>
+    <table class="table table-sm bg-white shadow-sm">
+      <thead><tr><th>Location</th><th>Quantity</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for level in levels %}
+          <tr>
+            <td>{{ level.location.code }}</td>
+            <td>{{ level.quantity }}</td>
+            <td>
+              {% if level.status == 'out_of_stock' %}<span class="badge bg-danger">out</span>
+              {% elif level.status == 'low_stock' %}<span class="badge bg-warning text-dark">low</span>
+              {% else %}<span class="badge bg-success">ok</span>{% endif %}
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="3" class="text-center text-muted">No stock yet — record a receipt movement.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+<a class="btn btn-success" href="{% url 'movements:movement_new' %}">Record movement</a>
+{% endblock %}
