@@ -32,3 +32,11 @@ Thumbs.db
 .pytest_cache/
 .ruff_cache/
 .mypy_cache/
+
+# Vercel
+# .vercel/ holds the machine-local project link; vercel.json IS tracked.
+.vercel/
+
+# Secrets: ignore every dotenv variant, but keep the committed templates.
+.env*
+!.env.example

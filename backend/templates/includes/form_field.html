@@ -1,0 +1,26 @@
+{% comment %}
+Bootstrap-styled rendering of a single bound form field.
+Keeps the same label.form-label + input.form-control markup as
+registration/login.html while surfacing field-level errors and help text.
+Expects: field
+{% endcomment %}
+<div class="mb-3">
+  <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+  <input class="form-control{% if field.errors %} is-invalid{% endif %}"
+         type="{{ field.widget_type }}"
+         name="{{ field.name }}"
+         id="{{ field.id_for_label }}"
+         {% if field.field.widget.attrs.autofocus %}autofocus{% endif %}
+         {% if field.field.widget.input_type == "email" %}autocomplete="email"{% endif %}
+         {% if field.name == "old_password" %}autocomplete="current-password"{% endif %}
+         {% if field.name == "new_password1" or field.name == "new_password2" %}autocomplete="new-password"{% endif %}
+         required>
+  {% if field.errors %}
+    <div class="invalid-feedback">
+      {% for error in field.errors %}{{ error }}{% endfor %}
+    </div>
+  {% endif %}
+  {% if field.help_text %}
+    <div class="form-text">{{ field.help_text|safe }}</div>
+  {% endif %}
+</div>
